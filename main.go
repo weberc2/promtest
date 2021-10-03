@@ -1,6 +1,8 @@
 package main
 
 import (
+	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -29,7 +31,15 @@ func main() {
 	if err := http.ListenAndServe(
 		appAddr,
 		promrouter.NewWithDefaults().Register(
-			pz.JSONLog(os.Stderr),
+			// like pz.JSONLog(), but this doesn't pretty-print
+			func(v interface{}) {
+				data, err := json.Marshal(v)
+				if err != nil {
+					log.Printf("ERROR marshaling %# v", v)
+					return
+				}
+				fmt.Fprintf(os.Stderr, "%s\n", data)
+			},
 			pz.Route{Path: "/health", Method: "GET", Handler: healthCheck},
 		),
 	); err != nil {
